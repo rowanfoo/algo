@@ -5,9 +5,13 @@ import com.dharma.algo.data.entity.TechTechstr;
 import com.dharma.algo.data.repo.TechStrRepo;
 import com.dharma.algo.service.ModeService;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.querydsl.QSort;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -20,7 +24,9 @@ public class AlgoContoller {
 @Autowired
     TechStrRepo techStrRepo;
 
-@GetMapping("/algo")
+    @Autowired  ModeService nodeService;
+
+    @GetMapping("/algo")
     public List<TechTechstr>  getalgo(){
         return Lists.newArrayList(
             techStrRepo.findAll(QTechTechstr.techTechstr.date.eq(LocalDate.now()))
@@ -116,9 +122,51 @@ public class AlgoContoller {
     }
 
 
+    @GetMapping("/algobycodes")
+    public String listalgobycodeanddate(@RequestParam  String codes , String date ) {
+
+    //        ArrayList<String> arr = new ArrayList<>();
+    //        arr.add("ptm.ax");
+    //        arr.add("csr.ax");
+    //
+      //  String  codes = "ptm.ax , csr.ax";
+
+        System.out.println("dates" + date);
+        System.out.println("codes" + codes);
+
+        String arr[] =codes.split(",");
+
+        Iterable<TechTechstr> data = techStrRepo.findAll(  QTechTechstr.techTechstr.code.in(arr)
+                        .and(QTechTechstr.techTechstr.date.eq (LocalDate.parse(date)  ) )
+                   ,new QSort(QTechTechstr.techTechstr.code.asc() ));
+
+        JsonArray  mainArray = new JsonArray();
+        data.forEach((a)->{
+            JsonObject firstObject = new JsonObject();
+
+            String mode  = nodeService.getMode((int)a.getMode() );
+            if (! mode.isEmpty()){
+                firstObject.addProperty("code",a.getCode() ) ;
+                firstObject.addProperty("mode",mode  ) ;
+                mainArray.add(firstObject);
+
+
+            }
+
+    //            firstObject.addProperty("mode",nodeService.getMode((int)a.getMode() ) ) ;
+            //  System.out.println("-----x-----" + a);
+
+
+        });
 
 
 
+        System.out.println("-----x-----" + mainArray);
+
+    //        algoContoller.getcodetech("AOG.AX");
+
+    return mainArray .toString();
+    }
 
 
 }
